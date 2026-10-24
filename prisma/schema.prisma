@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BUYER
+  SELLER
+}
+
+enum OrderStatus {
+  MENUNGGU_PEMBAYARAN
+  DIBAYAR
+  DIPROSES
+  DIKIRIM
+  SELESAI
+  DIBATALKAN
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  nama         String
+  email        String         @unique
+  noTelepon    String?        @map("no_telepon")
+  passwordHash String         @map("password_hash")
+  role         Role
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  farmerProfile FarmerProfile?
+  cart         Cart?
+  orders       Order[]
+  reviews      Review[]
+  notifications Notification[]
+  @@map("users")
+}
+
+model FarmerProfile {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique @map("user_id")
+  namaUsaha   String    @map("nama_usaha")
+  deskripsi   String    @db.Text
+  lokasi      String
+  foto        String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  user        User      @relation(fields: [userId], references: [id])
+  products    Product[]
+  @@map("farmer_profiles")
+}
+
+model Product {
+  id              Int           @id @default(autoincrement())
+  farmerProfileId Int           @map("farmer_profile_id")
+  nama            String
+  harga           Decimal       @db.Decimal(12, 2)
+  stok            Int
+  deskripsi       String        @db.Text
+  foto            String?
+  ratingRataRata  Float         @default(0) @map("rating_rata_rata")
+  isDeleted       Boolean       @default(false) @map("is_deleted")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  farmerProfile   FarmerProfile @relation(fields: [farmerProfileId], references: [id])
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  reviews         Review[]
+  @@map("products")
+}
+
+model Cart {
+  id         Int        @id @default(autoincrement())
+  buyerId    Int        @unique @map("buyer_id")
+  totalHarga Decimal    @default(0) @map("total_harga") @db.Decimal(12, 2)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  buyer      User       @relation(fields: [buyerId], references: [id])
+  items      CartItem[]
+  @@map("carts")
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int      @map("cart_id")
+  productId Int      @map("product_id")
+  jumlah    Int
+  subtotal  Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+  @@unique([cartId, productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id            Int                  @id @default(autoincrement())
+  buyerId       Int                  @map("buyer_id")
+  nomorOrder    String               @unique @map("nomor_order")
+  tanggalOrder  DateTime             @default(now()) @map("tanggal_order")
+  totalHarga    Decimal              @map("total_harga") @db.Decimal(12, 2)
+  namaPenerima  String               @map("nama_penerima")
+  catatan       String?              @db.Text
+  status        OrderStatus          @default(MENUNGGU_PEMBAYARAN)
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  buyer         User                 @relation(fields: [buyerId], references: [id])
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  payment       Payment?
+  @@map("orders")
+}
+
+model OrderItem {
+  id          Int       @id @default(autoincrement())
+  orderId     Int       @map("order_id")
+  productId   Int       @map("product_id")
+  jumlah      Int
+  hargaSatuan Decimal   @map("harga_satuan") @db.Decimal(12, 2)
+  subtotal    Decimal   @db.Decimal(12, 2)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  order       Order     @relation(fields: [orderId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
+  reviews     Review[]
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id               Int         @id @default(autoincrement())
+  orderId          Int         @map("order_id")
+  status           OrderStatus
+  waktuPerubahan   DateTime    @default(now()) @map("waktu_perubahan")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  order            Order       @relation(fields: [orderId], references: [id])
+  @@map("order_status_history")
+}
+
+model Payment {
+  id               Int           @id @default(autoincrement())
+  orderId          Int           @unique @map("order_id")
+  xenditInvoiceId  String?       @unique @map("xendit_invoice_id")
+  invoiceUrl       String?       @map("invoice_url")
+  jumlah           Decimal       @db.Decimal(12, 2)
+  metodePembayaran String?       @map("metode_pembayaran")
+  status           PaymentStatus @default(PENDING)
+  paidAt           DateTime?     @map("paid_at")
+  expiredAt        DateTime?     @map("expired_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  order            Order         @relation(fields: [orderId], references: [id])
+  @@map("payments")
+}
+
+model Review {
+  id          Int       @id @default(autoincrement())
+  buyerId     Int       @map("buyer_id")
+  orderItemId Int       @unique @map("order_item_id")
+  productId   Int       @map("product_id")
+  rating      Int
+  komentar    String    @db.Text
+  tanggal    DateTime  @default(now())
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  buyer       User      @relation(fields: [buyerId], references: [id])
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
+  @@map("reviews")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  pesan     String   @db.Text
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id])
+  @@map("notifications")
+}
