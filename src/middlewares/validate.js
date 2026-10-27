@@ -16,9 +16,10 @@ export function validate(schema, source = 'body') {
 
     if (source === 'body') {
       req.body = result.data;
+    } else {
+      req.validated = { ...req.validated, [source]: result.data };
     }
 
     return next();
   };
 }
-
