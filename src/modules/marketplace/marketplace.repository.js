@@ -1,6 +1,16 @@
 import { prisma } from '../../config/database.js';
 
-const sellerSelect = { select: { id: true, nama: true } };
+const sellerSelect = {
+  select: {
+    id: true,
+    nama: true,
+    farmerProfile: {
+      select: {
+        namaUsaha: true,
+      },
+    },
+  },
+};
 
 function escapeLikeWildcards(value) {
   return value.replace(/[\\%_]/g, '\\$&');
@@ -32,6 +42,14 @@ export const marketplaceRepository = {
   findActiveById(id) {
     return prisma.product.findFirst({
       where: { id, deletedAt: null },
+      include: { seller: sellerSelect },
+    });
+  },
+
+  findManyActiveBySeller(sellerId) {
+    return prisma.product.findMany({
+      where: { sellerId, deletedAt: null },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: { seller: sellerSelect },
     });
   },
