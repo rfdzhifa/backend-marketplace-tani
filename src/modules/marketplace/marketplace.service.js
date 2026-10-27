@@ -2,7 +2,7 @@ import { NotFoundError } from '../../shared/errors/AppError.js';
 import { marketplaceRepository } from './marketplace.repository.js';
 
 function resolveSellerDisplayName(seller) {
-  return seller.nama;
+  return seller.farmerProfile?.namaUsaha || seller.nama;
 }
 
 function toListItem(product) {
@@ -51,6 +51,11 @@ export const marketplaceService = {
 
   findActiveById(id) {
     return marketplaceRepository.findActiveById(id);
+  },
+
+  async listActiveProductsBySeller(sellerId) {
+    const products = await marketplaceRepository.findManyActiveBySeller(sellerId);
+    return products.map(toListItem);
   },
 };
 
