@@ -9,7 +9,11 @@ function escapeLikeWildcards(value) {
 function buildWhere(search) {
   const where = { deletedAt: null };
   if (search) {
-    where.nama = { contains: escapeLikeWildcards(search) };
+    const term = escapeLikeWildcards(search);
+    where.OR = [
+      { nama: { contains: term } },
+      { deskripsi: { contains: term } },
+    ];
   }
   return where;
 }

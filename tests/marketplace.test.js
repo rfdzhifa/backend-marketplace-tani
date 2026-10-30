@@ -73,6 +73,12 @@ describe('Module 2: Marketplace (UC-04, UC-05, UC-06)', () => {
     expect(detail.status).toBe(404);
   });
 
+  it('Scenario 3b: search matches keywords inside product description', async () => {
+    const res = await list({ search: ` Deskripsi Tomat` });
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((p) => p.id)).toContain(ids.tomat);
+  });
+
   it('Scenario 3: search is case-insensitive', async () => {
     const lower = await list({ search: `${prefix} cabai` });
     const upper = await list({ search: `${prefix} CABAI` });
