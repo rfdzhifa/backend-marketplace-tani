@@ -15,6 +15,9 @@ export function toCartResponse(cart) {
       itemCount: 0,
       totalItems: 0,
       totalPrice: 0,
+      payableTotalItems: 0,
+      payableTotalPrice: 0,
+      hasUnavailableItems: false,
     };
   }
 
@@ -45,12 +48,20 @@ export function toCartResponse(cart) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.subtotal, 0);
 
+  const availableItems = items.filter((item) => item.isAvailable);
+  const payableTotalItems = availableItems.reduce((sum, item) => sum + item.quantity, 0);
+  const payableTotalPrice = availableItems.reduce((sum, item) => sum + item.subtotal, 0);
+  const hasUnavailableItems = availableItems.length < items.length;
+
   return {
     id: cart.id,
     items,
     itemCount,
     totalItems,
     totalPrice,
+    payableTotalItems,
+    payableTotalPrice,
+    hasUnavailableItems,
   };
 }
 

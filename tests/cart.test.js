@@ -162,12 +162,15 @@ describe('Module 4: Shopping Cart (UC-09)', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data).toEqual({
+    expect(res.body.data).toMatchObject({
       id: null,
       items: [],
       itemCount: 0,
       totalItems: 0,
       totalPrice: 0,
+      payableTotalItems: 0,
+      payableTotalPrice: 0,
+      hasUnavailableItems: false,
     });
 
     const dbCart = await prisma.cart.findUnique({ where: { buyerId: buyerNew.id } });
@@ -442,6 +445,8 @@ describe('Module 4: Shopping Cart (UC-09)', () => {
     const updatedItem = getRes.body.data.items.find((i) => i.id === item.id);
     expect(updatedItem.isAvailable).toBe(false);
     expect(updatedItem.stock).toBe(1);
+    expect(getRes.body.data.hasUnavailableItems).toBe(true);
+    expect(getRes.body.data.payableTotalPrice).toBeLessThan(getRes.body.data.totalPrice);
 
     const patchRes = await request(app)
       .patch(`/api/v1/cart/items/${item.id}`)
