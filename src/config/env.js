@@ -8,5 +8,8 @@ export const env = Object.freeze({
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
   BCRYPT_COST: Number(process.env.BCRYPT_COST) || 10,
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  MIDTRANS_SERVER_KEY: process.env.MIDTRANS_SERVER_KEY || '',
+  MIDTRANS_CLIENT_KEY: process.env.MIDTRANS_CLIENT_KEY || '',
+  MIDTRANS_IS_PRODUCTION: process.env.MIDTRANS_IS_PRODUCTION === 'true',
 });
 
