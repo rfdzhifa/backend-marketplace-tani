@@ -78,6 +78,14 @@ export const cartService = {
     return cart?.items || [];
   },
 
+  async clearCart(buyerId, client = prisma) {
+    const cart = await cartRepository.findByBuyerId(buyerId, client);
+    if (cart) {
+      await client.cartItem.deleteMany({ where: { cartId: cart.id } });
+      await cartRepository.updateCartTotal(cart.id, 0, client);
+    }
+  },
+
   async addItem(buyerId, { productId, quantity }) {
     const product = await findActiveById(productId);
     if (!product) {

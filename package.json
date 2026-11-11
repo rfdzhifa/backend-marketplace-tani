@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "test": "vitest run",
+    "test": "vitest run --fileParallelism=false",
     "lint": "eslint .",
     "postinstall": "prisma skills sync || exit 0"
   },
