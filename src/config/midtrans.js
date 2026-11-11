@@ -6,3 +6,4 @@ export const snap = new midtransclient.Snap({
   serverKey: env.MIDTRANS_SERVER_KEY,
   clientKey: env.MIDTRANS_CLIENT_KEY,
 });
+

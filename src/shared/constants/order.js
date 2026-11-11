@@ -1,1 +1,2 @@
 export const FLAT_SHIPPING_FEE_PER_SELLER = 10000;
+
