@@ -74,21 +74,33 @@ export const paymentService = {
       item_details: itemDetails,
     };
 
-    const transaction = await snap.createTransaction(parameter);
-    const snapToken = transaction.token;
-    const snapRedirectUrl = transaction.redirect_url;
+    try {
+      const transaction = await snap.createTransaction(parameter);
+      const snapToken = transaction.token;
+      const snapRedirectUrl = transaction.redirect_url;
 
-    await paymentRepository.updatePayment(payment.id, {
-      snapToken,
-      snapRedirectUrl,
-    });
+      await paymentRepository.updatePayment(payment.id, {
+        snapToken,
+        snapRedirectUrl,
+      });
 
-    return {
-      paymentId: payment.id,
-      midtransOrderId: payment.midtransOrderId,
-      snapToken,
-      redirectUrl: snapRedirectUrl,
-    };
+      return {
+        paymentId: payment.id,
+        midtransOrderId: payment.midtransOrderId,
+        snapToken,
+        redirectUrl: snapRedirectUrl,
+      };
+    } catch (err) {
+      if (err.httpStatusCode === 401 || err.ApiResponse?.error === 'Unauthorized') {
+        throw new BadRequestError(
+          'Kredensial Midtrans tidak valid (401 Unauthorized). Pastikan MIDTRANS_SERVER_KEY di .env sudah sesuai dengan akun Sandbox Midtrans Anda.',
+        );
+      }
+      if (err.ApiResponse?.error_messages) {
+        throw new BadRequestError(`Midtrans: ${err.ApiResponse.error_messages.join(', ')}`);
+      }
+      throw err;
+    }
   },
 
   async handleMidtransWebhook(payload) {
@@ -225,3 +237,4 @@ export const paymentService = {
     });
   },
 };
+
