@@ -118,4 +118,8 @@ export const reviewService = {
       },
     };
   },
+
+  getSellerRatingSummary(sellerId) {
+    return reviewRepository.getSellerRatingAggregate(sellerId);
+  },
 };

@@ -159,4 +159,17 @@ export const reviewRepository = {
       totalReviews: aggregate._count.id,
     };
   },
+
+  async getSellerRatingAggregate(sellerId) {
+    const aggregate = await prisma.review.aggregate({
+      where: {
+        product: {
+          sellerId,
+        },
+      },
+      _avg: { rating: true },
+    });
+
+    return Number((aggregate._avg.rating ?? 0).toFixed(2));
+  },
 };

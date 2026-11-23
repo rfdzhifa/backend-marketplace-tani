@@ -453,4 +453,35 @@ export const orderService = {
       return formatBuyerOrderDetail(updatedOrder);
     });
   },
+
+  async getSellerOrderMetrics(sellerId) {
+    const { revenueAggregate, statusGroups } = await orderRepository.getSellerOrderMetrics(sellerId);
+    const totalHargaSum = Number(revenueAggregate._sum.totalHarga ?? 0);
+    const ongkirSum = Number(revenueAggregate._sum.ongkir ?? 0);
+    const totalPendapatan = totalHargaSum - ongkirSum;
+
+    const countsByStatus = Object.fromEntries(
+      statusGroups.map((group) => [group.status, group._count.id]),
+    );
+
+    const menungguPembayaran = countsByStatus.MENUNGGU_PEMBAYARAN ?? 0;
+    const dibayar = countsByStatus.DIBAYAR ?? 0;
+    const diproses = countsByStatus.DIPROSES ?? 0;
+    const dikirim = countsByStatus.DIKIRIM ?? 0;
+    const selesai = countsByStatus.SELESAI ?? 0;
+    const dibatalkan = countsByStatus.DIBATALKAN ?? 0;
+
+    return {
+      totalPendapatan,
+      jumlahPesanan: {
+        total: menungguPembayaran + dibayar + diproses + dikirim + selesai + dibatalkan,
+        menungguPembayaran,
+        dibayar,
+        diproses,
+        dikirim,
+        selesai,
+        dibatalkan,
+      },
+    };
+  },
 };
