@@ -94,5 +94,18 @@ export const orderController = {
       return next(err);
     }
   },
+
+  async confirmOrderReceived(req, res, next) {
+    try {
+      const data = await orderService.confirmOrderReceived(req.user.id, req.validated.params.id);
+      return sendSuccess(res, {
+        statusCode: 200,
+        message: 'Pesanan berhasil dikonfirmasi diterima',
+        data,
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
 };
 

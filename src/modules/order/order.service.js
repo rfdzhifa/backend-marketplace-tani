@@ -421,4 +421,36 @@ export const orderService = {
         `Pesanan #${nomorOrder} telah dikirim oleh penjual.`,
     });
   },
+
+  async confirmOrderReceived(buyerId, orderId) {
+    return prisma.$transaction(async (tx) => {
+      const order = await orderRepository.findOrderById(orderId, tx);
+      if (!order || order.buyerId !== buyerId) {
+        throw new NotFoundError('Pesanan tidak ditemukan');
+      }
+
+      if (order.status !== 'DIKIRIM') {
+        throw new BadRequestError('Pesanan hanya dapat diselesaikan jika sudah berstatus Dikirim');
+      }
+
+      await orderRepository.updateOrderStatus(order.id, 'SELESAI', tx);
+      await orderRepository.createOrderStatusHistory(
+        {
+          orderId: order.id,
+          status: 'SELESAI',
+        },
+        tx,
+      );
+      await orderRepository.createNotification(
+        {
+          userId: order.sellerId,
+          pesan: `Pesanan #${order.nomorOrder} telah dikonfirmasi diterima oleh pembeli.`,
+        },
+        tx,
+      );
+
+      const updatedOrder = await orderRepository.findOrderById(order.id, tx);
+      return formatBuyerOrderDetail(updatedOrder);
+    });
+  },
 };
