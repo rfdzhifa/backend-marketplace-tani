@@ -81,6 +81,104 @@ function formatBuyerOrderDetail(order) {
   };
 }
 
+function formatSellerOrderSummary(order) {
+  const totalHarga = Number(order.totalHarga);
+  const ongkir = Number(order.ongkir);
+  const itemsSubtotal = totalHarga - ongkir;
+  const items = formatOrderItems(order.items);
+
+  return {
+    id: order.id,
+    nomorOrder: order.nomorOrder,
+    tanggalOrder: order.tanggalOrder,
+    status: order.status,
+    totalHarga,
+    ongkir,
+    itemsSubtotal,
+    itemsCount: items.length,
+    namaPenerima: order.namaPenerima,
+    catatan: order.catatan,
+    buyer: order.buyer
+      ? {
+          id: order.buyer.id,
+          nama: order.buyer.nama,
+          noTelepon: order.buyer.noTelepon,
+        }
+      : null,
+    payment: order.payment
+      ? {
+          id: order.payment.id,
+          status: order.payment.status,
+          metodePembayaran: order.payment.metodePembayaran,
+          paidAt: order.payment.paidAt,
+        }
+      : null,
+    items,
+  };
+}
+
+function formatSellerOrderDetail(order) {
+  const summary = formatSellerOrderSummary(order);
+
+  return {
+    ...summary,
+    payment: order.payment
+      ? {
+          id: order.payment.id,
+          midtransOrderId: order.payment.midtransOrderId,
+          status: order.payment.status,
+          metodePembayaran: order.payment.metodePembayaran,
+          jumlah: Number(order.payment.jumlah),
+          paidAt: order.payment.paidAt,
+        }
+      : null,
+    statusHistory: (order.statusHistory || []).map((h) => ({
+      id: h.id,
+      status: h.status,
+      waktuPerubahan: h.waktuPerubahan,
+    })),
+  };
+}
+
+async function transitionSellerOrderStatus({
+  sellerId,
+  orderId,
+  expectedStatus,
+  nextStatus,
+  invalidMessage,
+  notificationMessage,
+}) {
+  return prisma.$transaction(async (tx) => {
+    const order = await orderRepository.findOrderById(orderId, tx);
+    if (!order || order.sellerId !== sellerId) {
+      throw new NotFoundError('Pesanan tidak ditemukan');
+    }
+
+    if (order.status !== expectedStatus) {
+      throw new BadRequestError(invalidMessage);
+    }
+
+    await orderRepository.updateOrderStatus(order.id, nextStatus, tx);
+    await orderRepository.createOrderStatusHistory(
+      {
+        orderId: order.id,
+        status: nextStatus,
+      },
+      tx,
+    );
+    await orderRepository.createNotification(
+      {
+        userId: order.buyerId,
+        pesan: notificationMessage(order.nomorOrder),
+      },
+      tx,
+    );
+
+    const updatedOrder = await orderRepository.findOrderById(order.id, tx);
+    return formatSellerOrderDetail(updatedOrder);
+  });
+}
+
 export const orderService = {
   async checkout(buyerId, checkoutData) {
     return prisma.$transaction(async (tx) => {
@@ -270,5 +368,57 @@ export const orderService = {
     }
 
     return formatBuyerOrderDetail(order);
+  },
+
+  async getSellerOrders(sellerId, { page, limit, status }) {
+    const { orders, total } = await orderRepository.findOrdersBySeller({
+      sellerId,
+      status,
+      page,
+      limit,
+    });
+
+    return {
+      orders: orders.map(formatSellerOrderSummary),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
+  },
+
+  async getSellerOrderDetail(sellerId, orderId) {
+    const order = await orderRepository.findOrderById(orderId);
+    if (!order || order.sellerId !== sellerId) {
+      throw new NotFoundError('Pesanan tidak ditemukan');
+    }
+
+    return formatSellerOrderDetail(order);
+  },
+
+  async processSellerOrder(sellerId, orderId) {
+    return transitionSellerOrderStatus({
+      sellerId,
+      orderId,
+      expectedStatus: 'DIBAYAR',
+      nextStatus: 'DIPROSES',
+      invalidMessage: 'Pesanan hanya dapat diproses jika berstatus Dibayar',
+      notificationMessage: (nomorOrder) =>
+        `Pesanan #${nomorOrder} sedang diproses oleh penjual.`,
+    });
+  },
+
+  async shipSellerOrder(sellerId, orderId) {
+    return transitionSellerOrderStatus({
+      sellerId,
+      orderId,
+      expectedStatus: 'DIPROSES',
+      nextStatus: 'DIKIRIM',
+      invalidMessage: 'Pesanan hanya dapat dikirim jika berstatus Diproses',
+      notificationMessage: (nomorOrder) =>
+        `Pesanan #${nomorOrder} telah dikirim oleh penjual.`,
+    });
   },
 };

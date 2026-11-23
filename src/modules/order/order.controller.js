@@ -41,5 +41,58 @@ export const orderController = {
       return next(err);
     }
   },
+
+  async getSellerOrders(req, res, next) {
+    try {
+      const { orders, meta } = await orderService.getSellerOrders(req.user.id, req.validated.query);
+      return sendSuccess(res, {
+        statusCode: 200,
+        message: 'Daftar pesanan masuk berhasil diambil',
+        data: orders,
+        meta,
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async getSellerOrderDetail(req, res, next) {
+    try {
+      const data = await orderService.getSellerOrderDetail(req.user.id, req.validated.params.id);
+      return sendSuccess(res, {
+        statusCode: 200,
+        message: 'Detail pesanan masuk berhasil diambil',
+        data,
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async processSellerOrder(req, res, next) {
+    try {
+      const data = await orderService.processSellerOrder(req.user.id, req.validated.params.id);
+      return sendSuccess(res, {
+        statusCode: 200,
+        message: 'Pesanan berhasil diproses',
+        data,
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
+
+  async shipSellerOrder(req, res, next) {
+    try {
+      const data = await orderService.shipSellerOrder(req.user.id, req.validated.params.id);
+      return sendSuccess(res, {
+        statusCode: 200,
+        message: 'Pesanan berhasil ditandai dikirim',
+        data,
+      });
+    } catch (err) {
+      return next(err);
+    }
+  },
 };
 

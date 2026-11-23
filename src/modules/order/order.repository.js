@@ -149,6 +149,75 @@ export const orderRepository = {
     return { orders, total };
   },
 
+  async findOrdersBySeller({ sellerId, status, page, limit }, client = prisma) {
+    const where = {
+      sellerId,
+      ...(status ? { status } : {}),
+    };
+
+    const skip = (page - 1) * limit;
+
+    const [orders, total] = await Promise.all([
+      client.order.findMany({
+        where,
+        orderBy: [{ tanggalOrder: 'desc' }, { id: 'desc' }],
+        skip,
+        take: limit,
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  nama: true,
+                  satuan: true,
+                  gambarUrl: true,
+                },
+              },
+            },
+          },
+          buyer: {
+            select: {
+              id: true,
+              nama: true,
+              noTelepon: true,
+            },
+          },
+          payment: {
+            select: {
+              id: true,
+              status: true,
+              metodePembayaran: true,
+              paidAt: true,
+            },
+          },
+        },
+      }),
+      client.order.count({ where }),
+    ]);
+
+    return { orders, total };
+  },
+
+  updateOrderStatus(id, status, client = prisma) {
+    return client.order.update({
+      where: { id },
+      data: { status },
+    });
+  },
+
+  createOrderStatusHistory(data, client = prisma) {
+    return client.orderStatusHistory.create({
+      data,
+    });
+  },
+
+  createNotification(data, client = prisma) {
+    return client.notification.create({
+      data,
+    });
+  },
+
   findPaymentById(id, client = prisma) {
     return client.payment.findUnique({
       where: { id },
