@@ -131,4 +131,13 @@ export const marketplaceRepository = {
       data: { deletedAt: new Date() },
     });
   },
+
+  countActiveBySeller(sellerId) {
+    return prisma.product.count({
+      where: {
+        sellerId,
+        deletedAt: null,
+      },
+    });
+  },
 };

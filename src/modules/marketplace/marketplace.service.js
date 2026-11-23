@@ -157,4 +157,8 @@ export const marketplaceService = {
     await marketplaceRepository.softDeleteById(id);
     return { id };
   },
+
+  countActiveProductsBySeller(sellerId) {
+    return marketplaceRepository.countActiveBySeller(sellerId);
+  },
 };

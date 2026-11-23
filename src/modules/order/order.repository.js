@@ -226,5 +226,31 @@ export const orderRepository = {
       },
     });
   },
+
+  async getSellerOrderMetrics(sellerId, client = prisma) {
+    const [revenueAggregate, statusGroups] = await Promise.all([
+      client.order.aggregate({
+        where: {
+          sellerId,
+          status: {
+            in: ['DIBAYAR', 'DIPROSES', 'DIKIRIM', 'SELESAI'],
+          },
+        },
+        _sum: {
+          totalHarga: true,
+          ongkir: true,
+        },
+      }),
+      client.order.groupBy({
+        by: ['status'],
+        where: { sellerId },
+        _count: {
+          id: true,
+        },
+      }),
+    ]);
+
+    return { revenueAggregate, statusGroups };
+  },
 };
 

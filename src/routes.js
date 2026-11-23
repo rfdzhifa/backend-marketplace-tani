@@ -13,6 +13,7 @@ import paymentRoutes from './modules/payment/payment.routes.js';
 import reviewProductRoutes from './modules/review/review.product.routes.js';
 import reviewRoutes from './modules/review/review.routes.js';
 import reviewSellerRoutes from './modules/review/review.seller.routes.js';
+import sellerDashboardRoutes from './modules/seller-dashboard/seller-dashboard.routes.js';
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.use('/farmers', farmerProfilePublicRoutes);
 router.use('/seller/farmer-profile', farmerProfileSellerRoutes);
 router.use('/seller/products', sellerProductRoutes);
 router.use('/seller/reviews', reviewSellerRoutes);
+router.use('/seller/dashboard', sellerDashboardRoutes);
 router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
 router.use('/seller/orders', sellerOrderRoutes);
