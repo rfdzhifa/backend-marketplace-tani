@@ -25,6 +25,8 @@ export function errorHandler(err, _req, res, _next) {
     });
   }
 
+  console.error('[Unhandled Error]:', err);
+
   return res.status(500).json({
     success: false,
     message: 'Terjadi kesalahan pada server',

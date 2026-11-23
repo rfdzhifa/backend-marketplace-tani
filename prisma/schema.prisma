@@ -40,7 +40,8 @@ model User {
   farmerProfile FarmerProfile?
   products      Product[]
   cart          Cart?
-  orders        Order[]
+  orders        Order[]        @relation("BuyerOrders")
+  sellerOrders  Order[]        @relation("SellerOrders")
   reviews       Review[]
   notifications Notification[]
 
@@ -116,19 +117,25 @@ model CartItem {
 model Order {
   id            Int                  @id @default(autoincrement())
   buyerId       Int                  @map("buyer_id")
+  sellerId      Int                  @map("seller_id")
   nomorOrder    String               @unique @map("nomor_order")
   tanggalOrder  DateTime             @default(now()) @map("tanggal_order")
   totalHarga    Decimal              @map("total_harga") @db.Decimal(12, 2)
+  ongkir        Decimal              @default(10000) @map("ongkir") @db.Decimal(12, 2)
   namaPenerima  String               @map("nama_penerima")
   catatan       String?              @db.Text
   status        OrderStatus          @default(MENUNGGU_PEMBAYARAN)
+  paymentId     Int?                 @map("payment_id")
   createdAt     DateTime             @default(now()) @map("created_at")
   updatedAt     DateTime             @updatedAt @map("updated_at")
-  buyer         User                 @relation(fields: [buyerId], references: [id])
+  buyer         User                 @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller        User                 @relation("SellerOrders", fields: [sellerId], references: [id])
+  payment       Payment?             @relation(fields: [paymentId], references: [id])
   items         OrderItem[]
   statusHistory OrderStatusHistory[]
-  payment       Payment?
 
+  @@index([sellerId])
+  @@index([buyerId])
   @@map("orders")
 }
 
@@ -162,9 +169,9 @@ model OrderStatusHistory {
 
 model Payment {
   id               Int           @id @default(autoincrement())
-  orderId          Int           @unique @map("order_id")
-  xenditInvoiceId  String?       @unique @map("xendit_invoice_id")
-  invoiceUrl       String?       @map("invoice_url")
+  midtransOrderId  String        @unique @map("midtrans_order_id")
+  snapToken        String?       @map("snap_token")
+  snapRedirectUrl  String?       @map("snap_redirect_url")
   jumlah           Decimal       @db.Decimal(12, 2)
   metodePembayaran String?       @map("metode_pembayaran")
   status           PaymentStatus @default(PENDING)
@@ -172,7 +179,7 @@ model Payment {
   expiredAt        DateTime?     @map("expired_at")
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
-  order            Order         @relation(fields: [orderId], references: [id])
+  orders           Order[]
 
   @@map("payments")
 }
