@@ -46,4 +46,76 @@ export const reviewService = {
       },
     };
   },
+
+  async getProductReviews(productId, { page, limit }) {
+    const product = await reviewRepository.findActiveProductById(productId);
+    if (!product) {
+      throw new NotFoundError('Produk tidak ditemukan');
+    }
+
+    const skip = (page - 1) * limit;
+    const { reviews, total } = await reviewRepository.findProductReviews({
+      productId,
+      skip,
+      take: limit,
+    });
+
+    return {
+      reviews: reviews.map((review) => ({
+        id: review.id,
+        rating: review.rating,
+        komentar: review.komentar,
+        tanggal: review.tanggal,
+        buyer: {
+          id: review.buyer.id,
+          nama: review.buyer.nama,
+        },
+      })),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+      },
+    };
+  },
+
+  async getSellerReviews(sellerId, { page, limit }) {
+    const skip = (page - 1) * limit;
+    const { reviews, averageRating, totalReviews } = await reviewRepository.findSellerReviews({
+      sellerId,
+      skip,
+      take: limit,
+    });
+
+    return {
+      data: {
+        summary: {
+          averageRating,
+          totalReviews,
+        },
+        reviews: reviews.map((review) => ({
+          id: review.id,
+          rating: review.rating,
+          komentar: review.komentar,
+          tanggal: review.tanggal,
+          product: {
+            id: review.product.id,
+            nama: review.product.nama,
+            gambarUrl: review.product.gambarUrl,
+          },
+          buyer: {
+            id: review.buyer.id,
+            nama: review.buyer.nama,
+          },
+        })),
+      },
+      meta: {
+        page,
+        limit,
+        total: totalReviews,
+        totalPages: totalReviews === 0 ? 0 : Math.ceil(totalReviews / limit),
+      },
+    };
+  },
 };

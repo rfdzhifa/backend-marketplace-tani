@@ -1,5 +1,22 @@
 import { z } from 'zod';
 
+const integerString = (message) => z.string().regex(/^\d+$/, message).transform(Number);
+
+export const productIdParamSchema = z.object({
+  id: integerString('ID produk harus berupa bilangan bulat positif').pipe(
+    z.number().int().min(1, 'ID produk harus berupa bilangan bulat positif'),
+  ),
+});
+
+export const reviewListQuerySchema = z.object({
+  page: integerString('Page harus berupa bilangan bulat')
+    .pipe(z.number().int().min(1, 'Page minimal 1'))
+    .default(1),
+  limit: integerString('Limit harus berupa bilangan bulat')
+    .pipe(z.number().int().min(1, 'Limit minimal 1').max(50, 'Limit maksimal 50'))
+    .default(10),
+});
+
 export const createReviewSchema = z.object({
   orderItemId: z
     .number({

@@ -73,4 +73,90 @@ export const reviewRepository = {
       };
     });
   },
+
+  async findActiveProductById(productId) {
+    return prisma.product.findFirst({
+      where: {
+        id: productId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        nama: true,
+      },
+    });
+  },
+
+  async findProductReviews({ productId, skip, take }) {
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: { productId },
+        orderBy: [{ tanggal: 'desc' }, { id: 'desc' }],
+        skip,
+        take,
+        select: {
+          id: true,
+          rating: true,
+          komentar: true,
+          tanggal: true,
+          buyer: {
+            select: {
+              id: true,
+              nama: true,
+            },
+          },
+        },
+      }),
+      prisma.review.count({ where: { productId } }),
+    ]);
+
+    return { reviews, total };
+  },
+
+  async findSellerReviews({ sellerId, skip, take }) {
+    const where = {
+      product: {
+        sellerId,
+      },
+    };
+
+    const [reviews, aggregate] = await Promise.all([
+      prisma.review.findMany({
+        where,
+        orderBy: [{ tanggal: 'desc' }, { id: 'desc' }],
+        skip,
+        take,
+        select: {
+          id: true,
+          rating: true,
+          komentar: true,
+          tanggal: true,
+          product: {
+            select: {
+              id: true,
+              nama: true,
+              gambarUrl: true,
+            },
+          },
+          buyer: {
+            select: {
+              id: true,
+              nama: true,
+            },
+          },
+        },
+      }),
+      prisma.review.aggregate({
+        where,
+        _avg: { rating: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    return {
+      reviews,
+      averageRating: Number((aggregate._avg.rating ?? 0).toFixed(2)),
+      totalReviews: aggregate._count.id,
+    };
+  },
 };
