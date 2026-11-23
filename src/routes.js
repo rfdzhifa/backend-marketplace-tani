@@ -7,6 +7,7 @@ import {
 } from './modules/farmer-profile/farmer-profile.routes.js';
 import marketplaceRoutes from './modules/marketplace/marketplace.routes.js';
 import sellerProductRoutes from './modules/marketplace/marketplace.seller.routes.js';
+import notificationRoutes from './modules/notification/notification.routes.js';
 import orderRoutes from './modules/order/order.routes.js';
 import sellerOrderRoutes from './modules/order/order.seller.routes.js';
 import paymentRoutes from './modules/payment/payment.routes.js';
@@ -30,5 +31,6 @@ router.use('/orders', orderRoutes);
 router.use('/seller/orders', sellerOrderRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/reviews', reviewRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;
