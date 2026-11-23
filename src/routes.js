@@ -10,6 +10,7 @@ import sellerProductRoutes from './modules/marketplace/marketplace.seller.routes
 import orderRoutes from './modules/order/order.routes.js';
 import sellerOrderRoutes from './modules/order/order.seller.routes.js';
 import paymentRoutes from './modules/payment/payment.routes.js';
+import reviewRoutes from './modules/review/review.routes.js';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
 router.use('/seller/orders', sellerOrderRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/reviews', reviewRoutes);
 
 export default router;
