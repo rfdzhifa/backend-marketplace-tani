@@ -1,6 +1,36 @@
 import { z } from 'zod';
 
 const phoneRegex = /^(?:\+?62|0)8[0-9]{7,13}$/;
+const integerString = (message) => z.string().regex(/^\d+$/, message).transform(Number);
+
+export const ORDER_STATUS_VALUES = [
+  'MENUNGGU_PEMBAYARAN',
+  'DIBAYAR',
+  'DIPROSES',
+  'DIKIRIM',
+  'SELESAI',
+  'DIBATALKAN',
+];
+
+export const orderIdParamSchema = z.object({
+  id: integerString('ID pesanan harus berupa bilangan bulat positif').pipe(
+    z.number().int().min(1, 'ID pesanan harus berupa bilangan bulat positif'),
+  ),
+});
+
+export const orderListQuerySchema = z.object({
+  page: integerString('Page harus berupa bilangan bulat')
+    .pipe(z.number().int().min(1, 'Page minimal 1'))
+    .default(1),
+  limit: integerString('Limit harus berupa bilangan bulat')
+    .pipe(z.number().int().min(1, 'Limit minimal 1').max(50, 'Limit maksimal 50'))
+    .default(10),
+  status: z
+    .enum(ORDER_STATUS_VALUES, {
+      errorMap: () => ({ message: 'Status pesanan tidak valid' }),
+    })
+    .optional(),
+});
 
 export const checkoutSchema = z.object({
   namaPenerima: z

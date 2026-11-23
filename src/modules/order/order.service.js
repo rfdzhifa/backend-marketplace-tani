@@ -1,9 +1,85 @@
 import crypto from 'crypto';
 import { prisma } from '../../config/database.js';
 import { FLAT_SHIPPING_FEE_PER_SELLER } from '../../shared/constants/order.js';
-import { BadRequestError } from '../../shared/errors/AppError.js';
+import { BadRequestError, NotFoundError } from '../../shared/errors/AppError.js';
 import { getCartItemsForCheckout } from '../cart/index.js';
 import { orderRepository } from './order.repository.js';
+
+function formatOrderItems(items = []) {
+  return items.map((item) => ({
+    id: item.id,
+    productId: item.productId,
+    nama: item.product?.nama || null,
+    satuan: item.product?.satuan || null,
+    gambarUrl: item.product?.gambarUrl || null,
+    jumlah: item.jumlah,
+    hargaSatuan: Number(item.hargaSatuan),
+    subtotal: Number(item.subtotal),
+  }));
+}
+
+function formatBuyerOrderSummary(order) {
+  const totalHarga = Number(order.totalHarga);
+  const ongkir = Number(order.ongkir);
+  const itemsSubtotal = totalHarga - ongkir;
+  const items = formatOrderItems(order.items);
+
+  return {
+    id: order.id,
+    nomorOrder: order.nomorOrder,
+    tanggalOrder: order.tanggalOrder,
+    status: order.status,
+    totalHarga,
+    ongkir,
+    itemsSubtotal,
+    itemsCount: items.length,
+    namaPenerima: order.namaPenerima,
+    catatan: order.catatan,
+    seller: {
+      id: order.seller.id,
+      name: order.seller.farmerProfile?.namaUsaha || order.seller.nama,
+      nama: order.seller.nama,
+      namaUsaha: order.seller.farmerProfile?.namaUsaha || order.seller.nama,
+      lokasi: order.seller.farmerProfile?.lokasi || null,
+    },
+    payment: order.payment
+      ? {
+          id: order.payment.id,
+          status: order.payment.status,
+          metodePembayaran: order.payment.metodePembayaran,
+          paidAt: order.payment.paidAt,
+        }
+      : null,
+    items,
+  };
+}
+
+function formatBuyerOrderDetail(order) {
+  const summary = formatBuyerOrderSummary(order);
+
+  return {
+    ...summary,
+    seller: {
+      ...summary.seller,
+      foto: order.seller.farmerProfile?.foto || null,
+    },
+    payment: order.payment
+      ? {
+          id: order.payment.id,
+          midtransOrderId: order.payment.midtransOrderId,
+          status: order.payment.status,
+          metodePembayaran: order.payment.metodePembayaran,
+          jumlah: Number(order.payment.jumlah),
+          paidAt: order.payment.paidAt,
+        }
+      : null,
+    statusHistory: (order.statusHistory || []).map((h) => ({
+      id: h.id,
+      status: h.status,
+      waktuPerubahan: h.waktuPerubahan,
+    })),
+  };
+}
 
 export const orderService = {
   async checkout(buyerId, checkoutData) {
@@ -166,5 +242,33 @@ export const orderService = {
         },
       };
     });
+  },
+
+  async getBuyerOrders(buyerId, { page, limit, status }) {
+    const { orders, total } = await orderRepository.findOrdersByBuyer({
+      buyerId,
+      status,
+      page,
+      limit,
+    });
+
+    return {
+      orders: orders.map(formatBuyerOrderSummary),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
+  },
+
+  async getBuyerOrderDetail(buyerId, orderId) {
+    const order = await orderRepository.findOrderById(orderId);
+    if (!order || order.buyerId !== buyerId) {
+      throw new NotFoundError('Pesanan tidak ditemukan');
+    }
+
+    return formatBuyerOrderDetail(order);
   },
 };
